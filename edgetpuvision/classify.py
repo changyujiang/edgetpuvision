@@ -25,6 +25,7 @@ import collections
 import itertools
 import time
 
+from periphery import GPIO
 from edgetpu.classification.engine import ClassificationEngine
 
 from . import svg
@@ -103,7 +104,14 @@ def print_results(inference_rate, results):
     for label, score in results:
         print('  %s, score=%.2f' % (label, score))
 
+def beep(results, buzzer):
+    for label, score in results:
+        if label == 'weed':
+            buzzer.write(score > 9)
+
 def render_gen(args):
+    buzzer = GPIO(6, "out")
+
     acc = accumulator(size=args.window, top_k=args.top_k)
     acc.send(None)  # Initialize.
 
@@ -131,6 +139,7 @@ def render_gen(args):
 
             results = [(labels[i], score) for i, score in results]
             results = acc.send(results)
+            beep(results, buzzer)
             if args.print:
                 print_results(inference_rate, results)
 
